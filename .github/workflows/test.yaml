@@ -29,4 +29,6 @@ jobs:
     
     - name: Run tests
       run:  nohup python app.py & 
-        
+      
+    - name: Run curl command
+      run: curl http://localhost:5000
