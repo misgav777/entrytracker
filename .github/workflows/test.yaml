@@ -35,13 +35,14 @@ jobs:
     - name: Cleanup Python process
       if: always()
       run: |
+        # Kill by PID if file exists
         if [ -f .pid ]; then
           kill $(cat .pid) || true
         fi
+        # Double check port is cleared
+        lsof -ti:5000 | xargs -r kill -9 || true
       
-##### E2E Test #####
-    # - name: Set up Docker Compose
-    #   uses: docker/setup-buildx-action@v1
+############# E2E Test #############
 
     - name: Build and run with Docker Compose
       run: docker compose up -d
