@@ -31,6 +31,10 @@ jobs:
       
     - name: Run curl command
       run: curl http://localhost:5000
+
+    - name: Cleanup Python process
+      if: always()
+      run: kill $(cat .pid)
       
 ##### E2E Test #####
     # - name: Set up Docker Compose
