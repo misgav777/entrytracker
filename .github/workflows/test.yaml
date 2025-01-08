@@ -52,7 +52,3 @@ jobs:
         
     - name: Test API
       run: curl http://localhost:5000
-        
-    - name: Cleanup
-      if: always()
-      run: docker-compose down
