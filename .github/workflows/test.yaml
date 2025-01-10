@@ -108,4 +108,5 @@ jobs:
         git config --local user.name "GitHub Action"
         git add version.txt
         git commit -m "Bump version to ${{ steps.increment.outputs.new_version }}"
+        git remote set-url origin https://${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git
         git push
