@@ -10,10 +10,9 @@ permissions:
   contents: read
 
 jobs:
-  build:
-
+  ################### Build and test the application ###################
+  Build_test:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
 
@@ -43,23 +42,31 @@ jobs:
         lsof -ti:5000 | xargs -r kill -9 || true
       
 ################### E2E Test ###################
-
+  E2E_test:
+    needs: Build_test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
     - name: Build and run with Docker Compose
       run: docker compose up -d
-        
+      
     - name: Wait for service
       run: sleep 10
-        
+      
     - name: Test API
       run: curl http://localhost:80
 
 ################### Push the artifact to AWS ECR registry ###################
+  push_to_ecr:
+    needs: E2E_test
+    runs-on: ubuntu-latest
+    steps:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-south-1 
+        aws-region: ap-south-1  
 
     - name: Login to Amazon ECR
       id: login-ecr
@@ -71,5 +78,5 @@ jobs:
         REPOSITORY: dev/entrytracker
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        docker build -t $ECR_REGISTRY/flask-app:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/flask-app:$IMAGE_TAG
+        docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG
