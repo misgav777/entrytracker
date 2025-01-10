@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
@@ -61,6 +60,7 @@ jobs:
     needs: E2E_test
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v4
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
