@@ -51,7 +51,7 @@ jobs:
       run: sleep 10
         
     - name: Test API
-      run: curl http://localhost:5000
+      run: curl http://localhost:80
 
 ################### Push the artifact to AWS ECR registry ###################
     - name: Configure AWS credentials
