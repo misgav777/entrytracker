@@ -57,7 +57,7 @@ jobs:
 
 ################### Increment the version ###################
   version:
-    needs: Build_test
+    needs: E2E_test
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.increment.outputs.new_version }}
