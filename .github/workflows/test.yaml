@@ -54,9 +54,10 @@ jobs:
       
     - name: Test API
       run: curl http://localhost:80
-      
+
 ################### Increment the version ###################
   version:
+    needs: Build_test
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.increment.outputs.new_version }}
