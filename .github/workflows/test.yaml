@@ -58,10 +58,7 @@ jobs:
 
     - name: Fetch secret from AWS Secrets Manager
       id: secrets
-      run: |
-        source ./secret.sh
-        echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> $GITHUB_ENV
-        echo "MYSQL_DATABASE=$MYSQL_DATABASE" >> $GITHUB_ENV
+      run: ./secret.sh
 
     - name: Build and run with Docker Compose
       env:
