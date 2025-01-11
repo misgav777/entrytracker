@@ -133,5 +133,5 @@ jobs:
             sed -i 's|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|' docker-compose.yaml
 
             # Start the new containers using Docker Compose
-            docker-compose up -d
+            docker compose up -d
           EOF
