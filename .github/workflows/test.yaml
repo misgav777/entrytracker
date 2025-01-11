@@ -62,8 +62,8 @@ jobs:
 
     - name: Build and run with Docker Compose
       env:
-        MYSQL_ROOT_PASSWORD: ${{ env.DB_PASSWORD }}
-        MYSQL_DATABASE: ${{ env.DB_NAME }}
+        MYSQL_ROOT_PASSWORD: $DB_PASSWORD
+        MYSQL_DATABASE: $DB_NAME
       run: docker compose up -d
       
     - name: Wait for service
