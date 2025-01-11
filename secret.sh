@@ -11,6 +11,6 @@ SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --re
 export DB_PASSWORD=$(echo $SECRET_VALUE | jq -r '.password')
 export DB_NAME=$(echo $SECRET_VALUE | jq -r '.dbname')
 
-echo the values to check if they are correct
-echo $DB_PASSWORD
-echo $DB_NAME
+# echo the values to check if they are correct
+# echo $DB_PASSWORD
+# echo $DB_NAME
