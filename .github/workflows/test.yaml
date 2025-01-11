@@ -131,11 +131,12 @@ jobs:
         username: ubuntu
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         envs: SSH_PRIVATE_KEY,ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_DEFAULT_REGION,AWS_REGION
-    - name: Deploy to EC2
-      env:
-        EC2_HOST: ${{ secrets.EC2_HOST }}
-        EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      run: |
-        sudo apt update
-        echo "deploying to EC2" >> file.txt
+        script: |-
+          sudo apt update
+          sudo apt install docker.io -y
+          sudo apt install awscli -y
+          sudo $(aws ecr get-login --no-include-email --region ap-south-1);
+          sudo docker stop myappcontainer || true
+          sudo docker rm myappcontainer || true
+          sudo docker pull $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          sudo docker run -d --name myappcontainer -p 80:80 $REGISTRY/$REPOSITORY:$IMAGE_TAG
