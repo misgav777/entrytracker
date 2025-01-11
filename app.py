@@ -34,8 +34,14 @@ def get_secret():
 # Fetch the secret
 secret = get_secret()
 
+
+# val =  'mysql' if socket.gethostname() == 'mysql' else secret.get('host', 'default_host')
+
+# print(val)
+
+
 DB_CONFIG = {
-    'host': secret['host'],  # Use 'mysql' for Docker service name or your RDS endpoint for AWS
+    'host': 'mysql' if socket.gethostname() == 'mysql' else secret.get('host', 'default_host'),  # Use 'mysql' for Docker service name or your RDS endpoint for AWS
     'user': secret['username'],  # MySQL user
     'password': secret['password'],  # MySQL password
     'database': secret['dbname']  # Database name
