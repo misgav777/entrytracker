@@ -120,10 +120,10 @@ jobs:
           chmod 600 ec2_key.pem
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             # Clone the repository
-            git clone git@github.com:misgav777/entrytracker.git /home/ec2-user/entrytracker
+            git clone https://github.com/misgav777/entrytracker.git /home/entrytracker
 
             # Navigate to the repository directory
-            cd /home/ec2-user/entrytracker
+            cd /home/entrytracker
 
             # Pull the latest image from ECR
             docker login -u AWS -p $(aws ecr get-login-password --region ${{ secrets.AWS_REGION }}) ${{ steps.login-ecr.outputs.registry }}
