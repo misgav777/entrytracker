@@ -3,15 +3,42 @@ import socket
 import datetime
 import pymysql
 from flask import Flask, jsonify
+import boto3
+import json
+from botocore.exceptions import ClientError
 
 app = Flask(__name__)
 
-# Database connection configurations (update with your MySQL RDS or Docker MySQL config)
+def get_secret():
+    secret_name = "mysecret"
+    region_name = "ap-south-1"
+
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        raise e
+
+    # Decrypts secret using the associated KMS key.
+    secret = get_secret_value_response['SecretString']
+    return json.loads(secret)
+
+# Fetch the secret
+secret = get_secret()
+
 DB_CONFIG = {
-    'host': os.environ.get('DB_HOST', 'mysql'),  # Use 'mysql' for Docker service name or your RDS endpoint for AWS
-    'user': os.environ.get('DB_USER', 'root'),  # MySQL user
-    'password': os.environ.get('DB_PASSWORD', 'password'),  # MySQL password
-    'database': os.environ.get('DB_NAME', 'app_db')  # Database name
+    'host': secret['host'],  # Use 'mysql' for Docker service name or your RDS endpoint for AWS
+    'user': secret['username'],  # MySQL user
+    'password': secret['password'],  # MySQL password
+    'database': secret['dbname']  # Database name
 }
 
 def get_db_connection():
