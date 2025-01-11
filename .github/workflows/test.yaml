@@ -53,10 +53,16 @@ jobs:
   #   runs-on: ubuntu-latest
   #   steps:
     - uses: actions/checkout@v4
+    - name: give execute permission to the script
+      run: chmod +x ./secret.sh
+
+    - name: Fetch secret from AWS Secrets Manager
+      run: ./secret.sh
+
     - name: Build and run with Docker Compose
       env:
-        MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-        MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+        MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD
+        MYSQL_DATABASE: $MYSQL_DATABASE
       run: docker compose up -d
       
     - name: Wait for service
