@@ -102,22 +102,34 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-      - name: Deploy docker image to EC2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: dev/entrytracker
-          IMAGE_TAG: latest
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
-        uses: appleboy/ssh-action@master
+  ################### Deploy to EC2 ###################
+  deploy_to_ec2:
+    needs: push_to_ecr
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: SSH_PRIVATE_KEY,ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_DEFAULT_REGION,AWS_REGION
-          script: |-
-            sudo apt update -y
-            sudo $(aws ecr get-login --no-include-email --region ap-south-1);
-            sudo docker stop myappcontainer || true
-            sudo docker rm myappcontainer || true
-            sudo docker pull $REGISTRY/$REPOSITORY:$IMAGE_TAG
-            sudo docker run -d --name myappcontainer -p 80:80 $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Copy files to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i ${{ secrets.AWS_SECRET_ACCESS_KEY }} docker-compose.yaml ubuntu@${{ secrets.EC2_HOST }}:/home/docker-compose.yaml
+          scp -o StrictHostKeyChecking=no -i ${{ secrets.AWS_SECRET_ACCESS_KEY }} path/to/secret.sh ubuntu@${{ secrets.EC2_HOST }}:/home/secret.sh
+          scp -o StrictHostKeyChecking=no -i ${{ secrets.AWS_SECRET_ACCESS_KEY }} path/to/nginx.conf ubuntu@${{ secrets.EC2_HOST }}:/home/nginx.conf
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.AWS_SECRET_ACCESS_KEY }} ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
+            # Pull the latest image from ECR
+            docker login -u AWS -p $(aws ecr get-login-password --region ${{ secrets.AWS_REGION }}) ${{ steps.login-ecr.outputs.registry }}
+            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+            # Update the docker-compose.yaml file with the new image
+            sed -i 's|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|' /home/ec2-user/docker-compose.yaml
+
+            # Start the new containers using Docker Compose
+            docker-compose -f /home/ec2-user/docker-compose.yaml up -d
+          EOF
