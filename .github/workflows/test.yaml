@@ -132,9 +132,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         envs: SSH_PRIVATE_KEY,ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_DEFAULT_REGION,AWS_REGION
         script: |-
-          sudo apt update
-          sudo apt install docker.io -y
-          sudo apt install awscli -y
+          sudo apt update -y
           sudo $(aws ecr get-login --no-include-email --region ap-south-1);
           sudo docker stop myappcontainer || true
           sudo docker rm myappcontainer || true
