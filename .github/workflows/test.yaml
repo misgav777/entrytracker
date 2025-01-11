@@ -58,16 +58,19 @@ jobs:
 
     - name: Fetch secret from AWS Secrets Manager
       id: secrets
-      run: ./secret.sh
+      run: |
+        source ./secret.sh
+        echo "MYSQL_ROOT_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
+        echo "MYSQL_DATABASE=$DB_NAME" >> $GITHUB_ENV
 
     - name: Build and run with Docker Compose
       env:
-        MYSQL_ROOT_PASSWORD: $DB_PASSWORD
-        MYSQL_DATABASE: $DB_NAME
-      run: docker compose up -d
+        MYSQL_ROOT_PASSWORD: ${{ env.MYSQL_ROOT_PASSWORD }}
+        MYSQL_DATABASE: ${{ env.MYSQL_DATABASE }}
+      run: docker-compose up -d
       
-    - name: Wait for service
-      run: sleep 10
+    - name: Wait for MySQL to be ready
+      run: sleep 20
       
     - name: Test API
       run: curl http://localhost:80
