@@ -68,6 +68,7 @@ jobs:
         source ./secret.sh
         echo "MYSQL_ROOT_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
         echo "MYSQL_DATABASE=$DB_NAME" >> $GITHUB_ENV
+        echo $GITHUB_ENV
 
     - name: Build and run with Docker Compose
       env:
