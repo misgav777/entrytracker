@@ -8,9 +8,9 @@ REGION_NAME="ap-south-1"
 SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --region $REGION_NAME --query SecretString --output text)
 
 # Parse the secret value and export as environment variables
-export DB_PASSWORD=$(echo $SECRET_VALUE | jq -r '.password')
-export DB_NAME=$(echo $SECRET_VALUE | jq -r '.dbname')
+export MYSQL_ROOT_PASSWORD=$(echo $SECRET_VALUE | jq -r '.password')
+export MYSQL_DATABASE=$(echo $SECRET_VALUE | jq -r '.dbname')
 
 echo the values to check if they are correct
-echo $DB_PASSWORD
-echo $DB_NAME
+echo $MYSQL_ROOT_PASSWORD
+echo $MYSQL_DATABASE
