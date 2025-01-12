@@ -10,70 +10,70 @@ permissions:
   contents: write
 
 jobs:
-  # ################### Build and test the application ###################
-  # Build_test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #   - name: Configure AWS credentials
-  #     uses: aws-actions/configure-aws-credentials@v1
-  #     with:
-  #       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #       aws-region: ${{ secrets.AWS_REGION }}
+  ################### Build and test the application ###################
+  Build_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
-  #   - name: Set up Python 3.10
-  #     uses: actions/setup-python@v3
-  #     with:
-  #       python-version: "3.10"
-  #   - name: Install dependencies
-  #     run: |
-  #       python -m pip install --upgrade pip
-  #       pip install -r requirements.txt
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
     
-  #   - name: Run tests
-  #     run:  nohup python app.py & 
+    - name: Run tests
+      run:  nohup python app.py & 
       
-  #   - name: Run curl command
-  #     run: curl http://localhost:5000
+    - name: Run curl command
+      run: curl http://localhost:5000
 
-  #   - name: Cleanup Python process
-  #     if: always()
-  #     run: |
-  #       # Kill by PID if file exists
-  #       if [ -f .pid ]; then
-  #         kill $(cat .pid) || true
-  #       fi
-  #       # Double check port is cleared
-  #       lsof -ti:5000 | xargs -r kill -9 || true
+    - name: Cleanup Python process
+      if: always()
+      run: |
+        # Kill by PID if file exists
+        if [ -f .pid ]; then
+          kill $(cat .pid) || true
+        fi
+        # Double check port is cleared
+        lsof -ti:5000 | xargs -r kill -9 || true
       
-################### E2E Test ###################
-  # E2E_test:
-  #   needs: Build_test
-  #   runs-on: ubuntu-latest
-  #   steps:
-    # - uses: actions/checkout@v4
-    # - name: give execute permission to the script
-    #   run: chmod +x ./secret.sh
+################## E2E Test ###################
+  E2E_test:
+    needs: Build_test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: give execute permission to the script
+      run: chmod +x ./secret.sh
 
-    # - name: Fetch secret from AWS Secrets Manager
-    #   id: secrets
-    #   run: |
-    #     source ./secret.sh
-    #     echo "MYSQL_ROOT_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
-    #     echo "MYSQL_DATABASE=$DB_NAME" >> $GITHUB_ENV
+    - name: Fetch secret from AWS Secrets Manager
+      id: secrets
+      run: |
+        source ./secret.sh
+        echo "MYSQL_ROOT_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
+        echo "MYSQL_DATABASE=$DB_NAME" >> $GITHUB_ENV
 
-    # - name: Build and run with Docker Compose
-    #   env:
-    #     MYSQL_ROOT_PASSWORD: ${{ env.MYSQL_ROOT_PASSWORD }}
-    #     MYSQL_DATABASE: ${{ env.MYSQL_DATABASE }}
-    #   run: docker compose up -d
+    - name: Build and run with Docker Compose
+      env:
+        MYSQL_ROOT_PASSWORD: ${{ env.MYSQL_ROOT_PASSWORD }}
+        MYSQL_DATABASE: ${{ env.MYSQL_DATABASE }}
+      run: docker compose up -d
       
-    # - name: Wait for MySQL to be ready
-    #   run: sleep 10
+    - name: Wait for MySQL to be ready
+      run: sleep 10
       
-    # - name: Test API
-    #   run: curl http://localhost:80
+    - name: Test API
+      run: curl http://localhost:80
 
   ################### Push the artifact to AWS ECR registry ###################
   
@@ -103,43 +103,46 @@ jobs:
         #   docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         #   docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
   ################### Deploy to EC2 ###################
-  deploy_to_ec2:
-    # needs: push_to_ecr
-    runs-on: ubuntu-latest
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+  # deploy_to_ec2:
+  #   # needs: push_to_ecr
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v1
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: dev/entrytracker
-          IMAGE_TAG: latest
+  #     - name: Login to Amazon ECR
+  #       id: login-ecr
+  #       uses: aws-actions/amazon-ecr-login@v2
+  #       env:
+  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+  #         ECR_REPOSITORY: dev/entrytracker
+  #         IMAGE_TAG: latest
 
-      - name: Deploy to EC2
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ec2_key.pem
-          chmod 600 ec2_key.pem
-          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-            # Clone the repository
-            git clone https://github.com/misgav777/entrytracker.git /home/ubuntu/entrytracker
+  #     - name: Deploy to EC2
+  #       run: |
+  #         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ec2_key.pem
+  #         chmod 600 ec2_key.pem
+  #         ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+  #           # Clone the repository
+  #           git clone https://github.com/misgav777/entrytracker.git /home/ubuntu/entrytracker
 
-            # Navigate to the repository directory
-            cd /home/ubuntu/entrytracker
+  #           # Navigate to the repository directory
+  #           cd /home/ubuntu/entrytracker
 
-            # Pull the latest image from ECR
-            docker login -u AWS -p $(aws ecr get-login-password --region ${{ secrets.AWS_REGION }}) ${{ steps.login-ecr.outputs.registry }}
-            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+  #           # Run the secret.sh file to export environment variables
+  #           source secret.sh
 
-            # Update the docker-compose.yaml file with the new image
-            sed -i 's|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|' docker-compose.yaml
+  #           # Pull the latest image from ECR
+  #           docker login -u AWS -p $(aws ecr get-login-password --region ${{ secrets.AWS_REGION }}) ${{ steps.login-ecr.outputs.registry }}
+  #           docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-            # Start the new containers using Docker Compose
-            docker compose up -d
-          EOF
+  #           # Update the docker-compose.yaml file with the new image
+  #           sed -i 's|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|' docker-compose.yaml
+
+  #           # Start the new containers using Docker Compose
+  #           docker compose up -d
+  #         EOF
