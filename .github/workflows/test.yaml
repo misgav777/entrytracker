@@ -60,13 +60,13 @@ jobs:
       id: secrets
       run: |
         source ./secret.sh
-        echo "MYSQL_ROOT_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
-        echo "MYSQL_DATABASE=$DB_NAME" >> $GITHUB_ENV
+        # echo "MYSQL_ROOT_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
+        # echo "MYSQL_DATABASE=$DB_NAME" >> $GITHUB_ENV
 
     - name: Build and run with Docker Compose
       env:
-        MYSQL_ROOT_PASSWORD: ${{ env.MYSQL_ROOT_PASSWORD }}
-        MYSQL_DATABASE: ${{ env.MYSQL_DATABASE }}
+        MYSQL_ROOT_PASSWORD: $DB_PASSWORD
+        MYSQL_DATABASE: $DB_NAME
       run: docker compose up -d
       
     - name: Wait for MySQL to be ready
@@ -94,15 +94,15 @@ jobs:
   #       id: login-ecr
   #       uses: aws-actions/amazon-ecr-login@v2
       
-      # - name: Build and push to ECR
-        # env:
-        #   ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        #   ECR_REPOSITORY: dev/entrytracker
-        #   IMAGE_TAG: latest
-        # run: |
-        #   docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        #   docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-  ################### Deploy to EC2 ###################
+  #     - name: Build and push to ECR
+  #       env:
+  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+  #         ECR_REPOSITORY: dev/entrytracker
+  #         IMAGE_TAG: latest
+  #       run: |
+  #         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+  #         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+  ################## Deploy to EC2 ###################
   # deploy_to_ec2:
   #   # needs: push_to_ecr
   #   runs-on: ubuntu-latest
@@ -142,7 +142,8 @@ jobs:
 
   #           # Update the docker-compose.yaml file with the new image
   #           sed -i 's|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|' docker-compose.yaml
+  #           sed -i 's|context: .*|context: 713881821143.dkr.ecr.ap-south-1.amazonaws.com/myapp/cowsay:latest|' docker-compose.yaml
 
   #           # Start the new containers using Docker Compose
-  #           docker compose up -d
+  #           docker compose up --build -d 
   #         EOF
