@@ -12,7 +12,7 @@ variable "project_name" {
 variable "environment" {
   description = "environment"
   type        = string
-  default     = "Dev"
+  default     = "production"
 }
 
 variable "access_key" {
