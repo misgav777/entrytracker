@@ -165,10 +165,12 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             # Clone the repository
             git clone https://github.com/misgav777/entrytracker.git /home/ubuntu/entrytracker
+            git pull origin main 
 
             # Navigate to the repository directory
             cd /home/ubuntu/entrytracker
-
+            git pull origin main
+            
             # Read the version from version.txt
             VERSION=$(cat version.txt)
             export VERSION
