@@ -15,7 +15,7 @@ services:
 
   app:
     build:
-      context: .
+      context: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
     environment:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
