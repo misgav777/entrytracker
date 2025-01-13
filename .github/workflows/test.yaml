@@ -178,10 +178,10 @@ jobs:
 
             # Pull the latest image from ECR
             docker login -u AWS -p $(aws ecr get-login-password --region ${{ secrets.AWS_REGION }}) ${{ steps.login-ecr.outputs.registry }}
-            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION
+            docker pull ${{ steps.login-ecr.outputs.registry }}/dev/entrytracker:$VERSION
 
             # Update the docker-compose.yaml file with the new image
-            sed -i 's|context: .*|context: $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION|' docker-compose.yaml
+            sed -i 's|context: .*|context: ${{ steps.login-ecr.outputs.registry }}/dev/entrytracker:$VERSION|' docker-compose.yaml
 
             # Start the new containers using Docker Compose
             docker compose up --build -d   
