@@ -168,6 +168,7 @@ jobs:
 
             # Read the version from version.txt
             VERSION=$(cat version.txt)
+            export VERSION
 
             # Run the secret.sh file to export environment variables
             source secret.sh
