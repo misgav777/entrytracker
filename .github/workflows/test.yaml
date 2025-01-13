@@ -6,6 +6,7 @@ on:
     branches: [ "main" ]
     paths-ignore:
       - 'version.txt'
+      - 'terraform/**'
   workflow_dispatch:
 
 permissions:
@@ -170,7 +171,7 @@ jobs:
             # Navigate to the repository directory
             cd /home/ubuntu/entrytracker
             git pull origin main
-            
+
             # Read the version from version.txt
             VERSION=$(cat version.txt)
             export VERSION
