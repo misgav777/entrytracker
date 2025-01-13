@@ -11,6 +11,6 @@ SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --re
 export MYSQL_ROOT_PASSWORD=$(echo $SECRET_VALUE | jq -r '.password')
 export MYSQL_DATABASE=$(echo $SECRET_VALUE | jq -r '.dbname')
 
-echo the values to check if they are correct
-echo $MYSQL_ROOT_PASSWORD
-echo $MYSQL_DATABASE
+# echo the values to check if they are correct
+# echo $MYSQL_ROOT_PASSWORD
+# echo $MYSQL_DATABASE
