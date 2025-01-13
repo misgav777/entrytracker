@@ -181,7 +181,7 @@ jobs:
             docker pull ${{ steps.login-ecr.outputs.registry }}/dev/entrytracker:$VERSION
 
             # Update the docker-compose.yaml file with the new image
-            sed -i '/app:/,/image:/s|image: .*|image: ${{ steps.login-ecr.outputs.registry }}/dev/entrytracker:$VERSION|' docker-compose.yaml
+            sed -i '/app:/,/build:/s|build: .*|image: ${{ steps.login-ecr.outputs.registry }}/dev/entrytracker:$VERSION|' docker-compose.yaml
 
             # Start the new containers using Docker Compose
             docker compose up --build -d   
