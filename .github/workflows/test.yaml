@@ -128,6 +128,10 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Update docker-compose.yaml with new image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: dev/entrytracker
+          IMAGE_TAG: ${{ env.VERSION }}
         run: |
           sed -i 's|context: .*|context: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|' docker-compose.yaml
 
