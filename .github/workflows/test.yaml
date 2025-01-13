@@ -86,7 +86,7 @@ jobs:
   ################## Push the artifact to AWS ECR registry ###################
   
   push_to_ecr:
-    needs: Build_test
+    needs: E2E_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
