@@ -12,132 +12,132 @@ permissions:
   contents: write
 
 jobs:
-  ################### Build and test the application ###################
-#   Build_test:
-#     runs-on: ubuntu-latest
-#     steps:
-#     - uses: actions/checkout@v4
-#     - name: Configure AWS credentials
-#       uses: aws-actions/configure-aws-credentials@v1
-#       with:
-#         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#         aws-region: ${{ secrets.AWS_REGION }}
+  ################## Build and test the application ###################
+  Build_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
-#     - name: Set up Python 3.10
-#       uses: actions/setup-python@v3
-#       with:
-#         python-version: "3.10"
-#     - name: Install dependencies
-#       run: |
-#         python -m pip install --upgrade pip
-#         pip install -r requirements.txt
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
     
-#     - name: Run tests
-#       run:  nohup python app.py & 
+    - name: Run tests
+      run:  nohup python app.py & 
       
-#     - name: Run curl command
-#       run: curl http://localhost:5000
+    - name: Run curl command
+      run: curl http://localhost:5000
 
-#     - name: Cleanup Python process
-#       if: always()
-#       run: |
-#         # Kill by PID if file exists
-#         if [ -f .pid ]; then
-#           kill $(cat .pid) || true
-#         fi
-#         # Double check port is cleared
-#         lsof -ti:5000 | xargs -r kill -9 || true
+    - name: Cleanup Python process
+      if: always()
+      run: |
+        # Kill by PID if file exists
+        if [ -f .pid ]; then
+          kill $(cat .pid) || true
+        fi
+        # Double check port is cleared
+        lsof -ti:5000 | xargs -r kill -9 || true
       
-# ################# E2E Test ###################
-#   E2E_test:
-#     needs: Build_test
-#     runs-on: ubuntu-latest
-#     steps:
-#     - uses: actions/checkout@v4
-#     - name: Configure AWS credentials
-#       uses: aws-actions/configure-aws-credentials@v1
-#       with:
-#         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#         aws-region: ${{ secrets.AWS_REGION }}
-#     - name: give execute permission to the script
-#       run: chmod +x ./secret.sh
+################# E2E Test ###################
+  E2E_test:
+    needs: Build_test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+    - name: give execute permission to the script
+      run: chmod +x ./secret.sh
 
-#     - name: Fetch secret from AWS Secrets Manager
-#       id: secrets
-#       run: |
-#         source ./secret.sh
-#         echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> $GITHUB_ENV
-#         echo "MYSQL_DATABASE=$MYSQL_DATABASE" >> $GITHUB_ENV
+    - name: Fetch secret from AWS Secrets Manager
+      id: secrets
+      run: |
+        source ./secret.sh
+        echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> $GITHUB_ENV
+        echo "MYSQL_DATABASE=$MYSQL_DATABASE" >> $GITHUB_ENV
 
-#     - name: Build and run with Docker Compose
-#       env:
-#         MYSQL_ROOT_PASSWORD: ${{ env.MYSQL_ROOT_PASSWORD }}
-#         MYSQL_DATABASE: ${{ env.MYSQL_DATABASE }}
-#       run: docker compose up -d
+    - name: Build and run with Docker Compose
+      env:
+        MYSQL_ROOT_PASSWORD: ${{ env.MYSQL_ROOT_PASSWORD }}
+        MYSQL_DATABASE: ${{ env.MYSQL_DATABASE }}
+      run: docker compose up -d
       
-#     - name: Wait for MySQL to be ready
-#       run: sleep 10
+    - name: Wait for MySQL to be ready
+      run: sleep 10
       
-#     - name: Test API
-#       run: curl http://localhost:80
+    - name: Test API
+      run: curl http://localhost:80
 
-#   ################## Push the artifact to AWS ECR registry ###################
+  ################## Push the artifact to AWS ECR registry ###################
   
-#   push_to_ecr:
-#     needs: E2E_test
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v4
+  push_to_ecr:
+    needs: E2E_test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
           
-#       - name: Configure AWS credentials
-#         uses: aws-actions/configure-aws-credentials@v1
-#         with:
-#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           aws-region: ${{ secrets.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
           
-#       - name: Login to Amazon ECR
-#         id: login-ecr
-#         uses: aws-actions/amazon-ecr-login@v2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
       
-#       - name: Pull latest changes
-#         run: git pull origin main
+      - name: Pull latest changes
+        run: git pull origin main
 
-#       - name: Read and increment version
-#         id: version
-#         run: |
-#           VERSION=$(cat version.txt)
-#           echo "Current version: $VERSION"
-#           IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
-#           VERSION_PARTS[2]=$((VERSION_PARTS[2] + 1))
-#           NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.${VERSION_PARTS[2]}"
-#           echo "New version: $NEW_VERSION"
-#           echo $NEW_VERSION > version.txt
-#           echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+      - name: Read and increment version
+        id: version
+        run: |
+          VERSION=$(cat version.txt)
+          echo "Current version: $VERSION"
+          IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
+          VERSION_PARTS[2]=$((VERSION_PARTS[2] + 1))
+          NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.${VERSION_PARTS[2]}"
+          echo "New version: $NEW_VERSION"
+          echo $NEW_VERSION > version.txt
+          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
-#       - name: Build and push to ECR
-#         env:
-#           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-#           ECR_REPOSITORY: dev/entrytracker
-#           IMAGE_TAG: ${{ env.VERSION }}
-#         run: |
-#           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-#           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - name: Build and push to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: dev/entrytracker
+          IMAGE_TAG: ${{ env.VERSION }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-#       - name: Commit and push new version
-#         run: |
-#           git config --global user.name 'github-actions'
-#           git config --global user.email 'github-actions@github.com'
-#           git add version.txt
-#           git commit -m "Update version.txt to ${{ env.VERSION }}"
-#           git push origin HEAD:main
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit and push new version
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add version.txt
+          git commit -m "Update version.txt to ${{ env.VERSION }}"
+          git push origin HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   ################### Deploy to EC2 ###################
   deploy_to_ec2:
-    # needs: push_to_ecr
+    needs: push_to_ecr
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
