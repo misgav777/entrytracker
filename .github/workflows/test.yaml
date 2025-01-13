@@ -86,112 +86,104 @@ jobs:
 
   ################### Push the artifact to AWS ECR registry ###################
   
-  push_to_ecr:
-    # needs: Build_test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-          
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-          
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-      
-      - name: Pull latest changes
-        run: git pull origin main
-
-      - name: Read and increment version
-        id: version
-        run: |
-          VERSION=$(cat version.txt)
-          echo "Current version: $VERSION"
-          IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
-          VERSION_PARTS[2]=$((VERSION_PARTS[2] + 1))
-          NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.${VERSION_PARTS[2]}"
-          echo "New version: $NEW_VERSION"
-          echo $NEW_VERSION > version.txt
-          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
-
-      - name: Build and push to ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: dev/entrytracker
-          IMAGE_TAG: ${{ env.VERSION }}
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-      - name: Update docker-compose.yaml with new image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: dev/entrytracker
-          IMAGE_TAG: ${{ env.VERSION }}
-        run: |
-          sed -i 's|context: .*|context: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|' docker-compose.yaml
-
-      - name: Commit and push new version and updated docker-compose.yaml
-        run: |
-          git config --global user.name 'github-actions'
-          git config --global user.email 'github-actions@github.com'
-          git add version.txt docker-compose.yaml
-          git commit -m "Update docker-compose.yaml version.txt"
-          git push origin HEAD:main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  ################### Deploy to EC2 ###################
-  # deploy_to_ec2:
-  #   # needs: push_to_ecr
+  # push_to_ecr:
+  #   # needs: Build_test
   #   runs-on: ubuntu-latest
   #   steps:
+  #     - uses: actions/checkout@v4
+          
   #     - name: Configure AWS credentials
   #       uses: aws-actions/configure-aws-credentials@v1
   #       with:
   #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
   #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   #         aws-region: ${{ secrets.AWS_REGION }}
-
+          
   #     - name: Login to Amazon ECR
   #       id: login-ecr
   #       uses: aws-actions/amazon-ecr-login@v2
-  #       env:
-  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-  #         ECR_REPOSITORY: dev/entrytracker
-  #         IMAGE_TAG: latest
+      
+  #     - name: Pull latest changes
+  #       run: git pull origin main
 
-  #     - name: Deploy to EC2
-  #       env:
-  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-  #         ECR_REPOSITORY: dev/entrytracker
+  #     - name: Read and increment version
+  #       id: version
   #       run: |
-  #         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ec2_key.pem
-  #         chmod 600 ec2_key.pem
-  #         ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-  #           # Clone the repository
-  #           git clone https://github.com/misgav777/entrytracker.git /home/ubuntu/entrytracker
+  #         VERSION=$(cat version.txt)
+  #         echo "Current version: $VERSION"
+  #         IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
+  #         VERSION_PARTS[2]=$((VERSION_PARTS[2] + 1))
+  #         NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.${VERSION_PARTS[2]}"
+  #         echo "New version: $NEW_VERSION"
+  #         echo $NEW_VERSION > version.txt
+  #         echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
-  #           # Navigate to the repository directory
-  #           cd /home/ubuntu/entrytracker
+  #     - name: Build and push to ECR
+  #       env:
+  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+  #         ECR_REPOSITORY: dev/entrytracker
+  #         IMAGE_TAG: ${{ env.VERSION }}
+  #       run: |
+  #         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+  #         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-  #           # Read the version from version.txt
-  #           VERSION=$(cat version.txt)
-  #           export VERSION
+  #     - name: Commit and push new version
+  #       run: |
+  #         git config --global user.name 'github-actions'
+  #         git config --global user.email 'github-actions@github.com'
+  #         git add version.txt
+  #         git commit -m "Update version.txt to ${{ env.VERSION }}"
+  #         git push origin HEAD:main
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  ################### Deploy to EC2 ###################
+  deploy_to_ec2:
+    # needs: push_to_ecr
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-  #           # Run the secret.sh file to export environment variables
-  #           source secret.sh
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: dev/entrytracker
+          IMAGE_TAG: latest
 
-  #           # Pull the latest image from ECR
-  #           docker login -u AWS -p $(aws ecr get-login-password --region ${{ secrets.AWS_REGION }}) ${{ steps.login-ecr.outputs.registry }}
-  #           docker pull ${{ steps.login-ecr.outputs.registry }}/dev/entrytracker:$VERSION
+      - name: Deploy to EC2
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: dev/entrytracker
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ec2_key.pem
+          chmod 600 ec2_key.pem
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            # Clone the repository
+            git clone https://github.com/misgav777/entrytracker.git /home/ubuntu/entrytracker
 
-  #           # Update the docker-compose.yaml file with the new image
-  #           sed -i 's|context: .*|context: ${{ steps.login-ecr.outputs.registry }}/dev/entrytracker:$VERSION|' docker-compose.yaml
+            # Navigate to the repository directory
+            cd /home/ubuntu/entrytracker
 
-  #           # Start the new containers using Docker Compose
-  #           docker compose up --build -d   
-  #         EOF
+            # Read the version from version.txt
+            VERSION=$(cat version.txt)
+            export VERSION
+
+            # Run the secret.sh file to export environment variables
+            source secret.sh
+
+            # Pull the latest image from ECR
+            docker login -u AWS -p $(aws ecr get-login-password --region ${{ secrets.AWS_REGION }}) ${{ steps.login-ecr.outputs.registry }}
+            docker pull ${{ steps.login-ecr.outputs.registry }}/dev/entrytracker:$VERSION
+
+            # Update the docker-compose.yaml file with the new image
+            sed -i 's|context: .*|context: ${{ steps.login-ecr.outputs.registry }}/dev/entrytracker:$VERSION|' docker-compose.yaml
+
+            # Start the new containers using Docker Compose
+            docker compose up --build -d   
+          EOF
